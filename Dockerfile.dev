@@ -1,0 +1,202 @@
+# Advanced Rubik's Cube Simulator - Development Docker Image
+# Optimized for development with all tools and debugging capabilities
+
+FROM python:3.11-slim
+
+# Set build arguments
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+ARG USERNAME=developer
+
+# Add metadata
+LABEL maintainer="Rubik's Cube Simulator Team <dev@rcsim.org>"
+LABEL purpose="development"
+LABEL org.opencontainers.image.title="RCSIM Development Environment"
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    # Build tools
+    build-essential \
+    gcc \
+    g++ \
+    cmake \
+    pkg-config \
+    make \
+    \
+    # Graphics dependencies
+    libgl1-mesa-dev \
+    libglu1-mesa-dev \
+    libegl1-mesa-dev \
+    libgles2-mesa-dev \
+    libx11-dev \
+    libxext-dev \
+    libxrandr-dev \
+    libxcursor-dev \
+    libxinerama-dev \
+    libxi-dev \
+    libxss-dev \
+    \
+    # Audio dependencies
+    libasound2-dev \
+    libpulse-dev \
+    libjack-dev \
+    \
+    # GUI and display
+    libglib2.0-dev \
+    libgtk-3-dev \
+    xvfb \
+    x11-apps \
+    \
+    # Development tools
+    git \
+    curl \
+    wget \
+    vim \
+    nano \
+    tree \
+    htop \
+    procps \
+    net-tools \
+    iputils-ping \
+    \
+    # Debugging tools
+    gdb \
+    valgrind \
+    strace \
+    \
+    # Documentation tools
+    graphviz \
+    pandoc \
+    \
+    # Clean up
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Create user with matching host UID/GID
+RUN groupadd -g ${GROUP_ID} ${USERNAME} && \
+    useradd -u ${USER_ID} -g ${GROUP_ID} -m -s /bin/bash ${USERNAME} && \
+    usermod -aG sudo ${USERNAME} && \
+    echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+# Install Python development tools
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+
+# Set work directory
+WORKDIR /workspace
+
+# Copy requirements and install dependencies
+COPY requirements*.txt ./
+RUN pip install --no-cache-dir -r requirements-dev.txt
+
+# Install additional development tools
+RUN pip install --no-cache-dir \
+    # Interactive development
+    ipython \
+    jupyter \
+    jupyterlab \
+    \
+    # Profiling and debugging
+    py-spy \
+    memory-profiler \
+    line-profiler \
+    pyinstrument \
+    \
+    # Code analysis
+    vulture \
+    radon \
+    xenon \
+    \
+    # Documentation
+    sphinx-autobuild \
+    \
+    # Build tools
+    build \
+    twine \
+    \
+    # Git hooks
+    pre-commit
+
+# Install Node.js for some development tools
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y nodejs && \
+    npm install -g markdownlint-cli
+
+# Create common directories
+RUN mkdir -p \
+    /workspace/src \
+    /workspace/tests \
+    /workspace/docs \
+    /workspace/data \
+    /workspace/logs \
+    /workspace/scripts \
+    /workspace/notebooks \
+    && chown -R ${USERNAME}:${USERNAME} /workspace
+
+# Switch to development user
+USER ${USERNAME}
+
+# Set up git configuration for development
+RUN git config --global init.defaultBranch main && \
+    git config --global pull.rebase false && \
+    git config --global user.name "Development Container" && \
+    git config --global user.email "dev@container.local"
+
+# Set up Python user directory
+ENV PATH="/home/${USERNAME}/.local/bin:${PATH}"
+ENV PYTHONPATH="/workspace/src:${PYTHONPATH}"
+
+# Development environment variables
+ENV RCSIM_ENV=development
+ENV RCSIM_DEBUG=1
+ENV RCSIM_LOG_LEVEL=DEBUG
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV SDL_VIDEODRIVER=x11
+
+# Set up display for GUI applications
+ENV DISPLAY=:0
+
+# Create startup script
+RUN echo '#!/bin/bash\n\
+echo "🚀 Advanced Rubik'\''s Cube Simulator - Development Environment"\n\
+echo "================================================"\n\
+echo "Python version: $(python --version)"\n\
+echo "Workspace: /workspace"\n\
+echo "User: $(whoami)"\n\
+echo ""\n\
+echo "📦 Available tools:"\n\
+echo "  - pytest: Run tests"\n\
+echo "  - black: Code formatting"\n\
+echo "  - mypy: Type checking"\n\
+echo "  - jupyter lab: Interactive development"\n\
+echo "  - pre-commit: Git hooks"\n\
+echo ""\n\
+echo "🔧 Common commands:"\n\
+echo "  pytest tests/                 # Run tests"\n\
+echo "  python src/rcsim/main.py      # Run application"\n\
+echo "  jupyter lab --ip=0.0.0.0      # Start Jupyter"\n\
+echo "  pre-commit install            # Install git hooks"\n\
+echo ""\n\
+if [ -f "pyproject.toml" ]; then\n\
+    echo "📋 Installing package in development mode..."\n\
+    pip install -e .\n\
+fi\n\
+echo ""\n\
+echo "🎮 Ready for development!"\n\
+exec "$@"\n\
+' > /home/${USERNAME}/startup.sh && \
+chmod +x /home/${USERNAME}/startup.sh
+
+# Expose common ports
+EXPOSE 8080 8888 8000 5000
+
+# Health check for development
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import sys; print(f'Python {sys.version}'); print('Development environment ready')" || exit 1
+
+# Set default working directory
+WORKDIR /workspace
+
+# Default command
+ENTRYPOINT ["/home/developer/startup.sh"]
+CMD ["bash"]

@@ -1,0 +1,123 @@
+name: 🧩 Algorithm Request
+description: Request a new solving algorithm or improvement
+title: "[ALGORITHM] "
+labels: ["algorithm", "enhancement", "triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Request a new solving algorithm or improvement to existing algorithms.
+
+  - type: dropdown
+    id: algorithm_type
+    attributes:
+      label: Algorithm Type
+      description: What type of algorithm are you requesting?
+      options:
+        - New Solving Method (e.g., Roux, ZZ, Petrus)
+        - OLL Algorithm Addition
+        - PLL Algorithm Addition
+        - F2L Case Addition
+        - Algorithm Optimization
+        - Pattern Recognition Improvement
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: algorithm_name
+    attributes:
+      label: Algorithm Name
+      description: What is the name of the algorithm or method?
+      placeholder: e.g., "ZZ Method", "OLL 43", "Antisune Variant"
+    validations:
+      required: true
+
+  - type: textarea
+    id: algorithm_notation
+    attributes:
+      label: Algorithm Notation
+      description: Provide the algorithm in standard notation if known
+      placeholder: e.g., "R U R' U R U2 R'"
+      render: text
+
+  - type: dropdown
+    id: cube_size
+    attributes:
+      label: Cube Size
+      description: Which cube size does this apply to?
+      options:
+        - 2x2
+        - 3x3
+        - 4x4
+        - 5x5
+        - 6x6+
+        - All sizes
+        - Multiple sizes
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Algorithm Description
+      description: Describe the algorithm and its purpose
+      placeholder: Explain what this algorithm does, when it's used, and why it's beneficial
+    validations:
+      required: true
+
+  - type: textarea
+    id: pattern
+    attributes:
+      label: Pattern/Case Description
+      description: Describe the cube state or pattern this algorithm solves
+      placeholder: Describe the cube configuration when this algorithm should be applied
+
+  - type: dropdown
+    id: difficulty
+    attributes:
+      label: Difficulty Level
+      description: What difficulty level is this algorithm?
+      options:
+        - Beginner
+        - Intermediate
+        - Advanced
+        - Expert
+    validations:
+      required: true
+
+  - type: textarea
+    id: benefits
+    attributes:
+      label: Benefits
+      description: What are the benefits of this algorithm?
+      placeholder: e.g., "Faster execution time", "Fewer moves", "Better finger tricks", "Educational value"
+
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: Provide any references, links, or sources for this algorithm
+      placeholder: Links to speedcubing websites, videos, or documentation
+
+  - type: textarea
+    id: implementation_notes
+    attributes:
+      label: Implementation Notes
+      description: Any specific notes about implementing this algorithm
+      placeholder: Special considerations, edge cases, or implementation details
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Checklist
+      description: Please confirm the following
+      options:
+        - label: I have verified this algorithm is correct and well-established
+          required: true
+        - label: I have searched existing issues to ensure this is not a duplicate
+          required: true
+        - label: This algorithm is suitable for educational or competitive use
+          required: true

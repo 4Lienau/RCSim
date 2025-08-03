@@ -1,0 +1,481 @@
+name: Maintenance
+
+on:
+  schedule:
+    # Run every Monday at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+    inputs:
+      update_dependencies:
+        description: 'Update dependencies'
+        required: false
+        default: true
+        type: boolean
+      security_scan:
+        description: 'Run security scan'
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: write
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # Dependency Updates
+  dependency-update:
+    name: Update Dependencies
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event.inputs.update_dependencies == 'true'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install pip-tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install pip-tools
+    
+    - name: Update requirements
+      run: |
+        # Update main requirements
+        pip-compile --upgrade requirements.in
+        
+        # Update development requirements  
+        pip-compile --upgrade requirements-dev.in
+    
+    - name: Check for dependency vulnerabilities
+      run: |
+        pip install safety
+        safety check --json --output safety-report.json || true
+    
+    - name: Create Pull Request for dependency updates
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: "chore: update dependencies"
+        title: "🔄 Automated Dependency Updates"
+        body: |
+          ## 📦 Automated Dependency Updates
+          
+          This PR contains automated updates to project dependencies.
+          
+          ### Changes:
+          - Updated `requirements.txt`
+          - Updated `requirements-dev.txt`
+          
+          ### Security Check:
+          - Safety report attached as artifact
+          
+          ### Review Checklist:
+          - [ ] Review dependency changes
+          - [ ] Check for breaking changes in updated packages
+          - [ ] Ensure all tests pass
+          - [ ] Verify application still works correctly
+          
+          ---
+          *This PR was created automatically by the maintenance workflow*
+        branch: chore/dependency-updates
+        delete-branch: true
+        labels: |
+          dependencies
+          automated
+          maintenance
+
+  # Security Scanning
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event.inputs.security_scan == 'true'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install security tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install safety bandit semgrep pip-audit
+        pip install -r requirements-dev.txt
+    
+    - name: Run Safety check
+      run: |
+        safety check --json --output safety-report.json
+      continue-on-error: true
+    
+    - name: Run Bandit security linter
+      run: |
+        bandit -r src/ -f json -o bandit-report.json
+      continue-on-error: true
+    
+    - name: Run pip-audit
+      run: |
+        pip-audit --format=json --output=pip-audit-report.json
+      continue-on-error: true
+    
+    - name: Run Semgrep
+      run: |
+        semgrep --config=auto --json --output=semgrep-report.json src/
+      continue-on-error: true
+    
+    - name: Upload security reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-reports
+        path: |
+          safety-report.json
+          bandit-report.json
+          pip-audit-report.json
+          semgrep-report.json
+    
+    - name: Process security findings
+      run: |
+        python -c "
+        import json
+        import sys
+        
+        # Check safety report
+        try:
+            with open('safety-report.json') as f:
+                safety_data = json.load(f)
+            if safety_data.get('vulnerabilities'):
+                print('⚠️ Safety found vulnerabilities!')
+                for vuln in safety_data['vulnerabilities']:
+                    print(f'  - {vuln[\"package_name\"]} {vuln[\"analyzed_version\"]}: {vuln[\"vulnerability_id\"]}')
+        except:
+            pass
+        
+        # Check bandit report
+        try:
+            with open('bandit-report.json') as f:
+                bandit_data = json.load(f)
+            if bandit_data.get('results'):
+                print('⚠️ Bandit found security issues!')
+                for issue in bandit_data['results']:
+                    print(f'  - {issue[\"test_name\"]} in {issue[\"filename\"]}:{issue[\"line_number\"]}')
+        except:
+            pass
+        "
+    
+    - name: Create security issue if vulnerabilities found
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          let hasVulnerabilities = false;
+          let issueBody = '## 🚨 Security Scan Results\n\n';
+          
+          // Check safety report
+          try {
+            const safetyData = JSON.parse(fs.readFileSync('safety-report.json', 'utf8'));
+            if (safetyData.vulnerabilities && safetyData.vulnerabilities.length > 0) {
+              hasVulnerabilities = true;
+              issueBody += '### 📦 Package Vulnerabilities (Safety)\n\n';
+              safetyData.vulnerabilities.forEach(vuln => {
+                issueBody += `- **${vuln.package_name} ${vuln.analyzed_version}**: ${vuln.vulnerability_id}\n`;
+                issueBody += `  - ${vuln.advisory}\n\n`;
+              });
+            }
+          } catch (e) {
+            console.log('No safety report or parse error');
+          }
+          
+          // Check bandit report
+          try {
+            const banditData = JSON.parse(fs.readFileSync('bandit-report.json', 'utf8'));
+            if (banditData.results && banditData.results.length > 0) {
+              hasVulnerabilities = true;
+              issueBody += '### 🔒 Code Security Issues (Bandit)\n\n';
+              banditData.results.forEach(issue => {
+                issueBody += `- **${issue.test_name}** in \`${issue.filename}:${issue.line_number}\`\n`;
+                issueBody += `  - Severity: ${issue.issue_severity}\n`;
+                issueBody += `  - Confidence: ${issue.issue_confidence}\n`;
+                issueBody += `  - ${issue.issue_text}\n\n`;
+              });
+            }
+          } catch (e) {
+            console.log('No bandit report or parse error');
+          }
+          
+          if (hasVulnerabilities) {
+            issueBody += '\n---\n*This issue was created automatically by the security scan workflow*';
+            
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🚨 Security Vulnerabilities Detected',
+              body: issueBody,
+              labels: ['security', 'vulnerability', 'automated']
+            });
+          }
+
+  # Code Quality Metrics
+  quality-metrics:
+    name: Code Quality Metrics
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install analysis tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements-dev.txt
+        pip install radon xenon vulture
+        pip install -e .
+    
+    - name: Generate code metrics
+      run: |
+        # Cyclomatic complexity
+        radon cc src/ --json > complexity-report.json
+        
+        # Maintainability index
+        radon mi src/ --json > maintainability-report.json
+        
+        # Raw metrics (lines of code, etc.)
+        radon raw src/ --json > raw-metrics.json
+        
+        # Dead code detection
+        vulture src/ --min-confidence 80 --json > dead-code-report.json || true
+    
+    - name: Generate test coverage report
+      run: |
+        pytest tests/unit/ --cov=src/rcsim --cov-report=json
+    
+    - name: Create metrics summary
+      run: |
+        python -c "
+        import json
+        import os
+        
+        print('# 📊 Code Quality Metrics Report\n')
+        
+        # Coverage
+        try:
+            with open('coverage.json') as f:
+                coverage = json.load(f)
+            total_coverage = coverage['totals']['percent_covered']
+            print(f'## Test Coverage: {total_coverage:.1f}%')
+            if total_coverage < 80:
+                print('⚠️ Coverage below 80% threshold')
+            else:
+                print('✅ Coverage meets quality standards')
+        except:
+            print('❌ Coverage data not available')
+        
+        print()
+        
+        # Complexity
+        try:
+            with open('complexity-report.json') as f:
+                complexity = json.load(f)
+            
+            high_complexity = []
+            for module, data in complexity.items():
+                for item in data:
+                    if item['complexity'] > 10:
+                        high_complexity.append(f'{module}:{item[\"name\"]} (CC: {item[\"complexity\"]})')
+            
+            print('## Cyclomatic Complexity')
+            if high_complexity:
+                print('⚠️ High complexity functions found:')
+                for func in high_complexity[:5]:  # Show top 5
+                    print(f'- {func}')
+            else:
+                print('✅ No high complexity functions detected')
+        except:
+            print('❌ Complexity data not available')
+        
+        print()
+        
+        # Lines of code
+        try:
+            with open('raw-metrics.json') as f:
+                raw_metrics = json.load(f)
+            
+            total_loc = sum(data['loc'] for data in raw_metrics.values())
+            total_sloc = sum(data['sloc'] for data in raw_metrics.values())
+            
+            print(f'## Code Size')
+            print(f'- Total Lines of Code: {total_loc}')
+            print(f'- Source Lines of Code: {total_sloc}')
+        except:
+            print('❌ Raw metrics not available')
+        " > metrics-summary.md
+    
+    - name: Upload metrics artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: quality-metrics
+        path: |
+          complexity-report.json
+          maintainability-report.json
+          raw-metrics.json
+          dead-code-report.json
+          coverage.json
+          metrics-summary.md
+
+  # Performance Monitoring
+  performance-monitor:
+    name: Performance Monitor
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libgl1-mesa-dev \
+          libglu1-mesa-dev \
+          libegl1-mesa-dev \
+          libgles2-mesa-dev \
+          xvfb
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements-dev.txt
+        pip install -e .
+    
+    - name: Run performance benchmarks
+      run: |
+        xvfb-run -a pytest tests/performance/ \
+          --benchmark-only \
+          --benchmark-json=benchmark-results.json \
+          --benchmark-min-rounds=5
+    
+    - name: Store benchmark results
+      uses: benchmark-action/github-action-benchmark@v1
+      with:
+        tool: 'pytest'
+        output-file-path: benchmark-results.json
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        auto-push: false
+        comment-on-alert: true
+        alert-threshold: '150%'
+        fail-on-alert: false
+    
+    - name: Upload performance results
+      uses: actions/upload-artifact@v4
+      with:
+        name: performance-results
+        path: benchmark-results.json
+
+  # Cleanup Old Artifacts
+  cleanup:
+    name: Cleanup Old Artifacts
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Delete old artifacts
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const cutoffDate = new Date();
+          cutoffDate.setDate(cutoffDate.getDate() - 30); // Keep artifacts for 30 days
+          
+          const artifacts = await github.rest.actions.listArtifactsForRepo({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            per_page: 100
+          });
+          
+          for (const artifact of artifacts.data.artifacts) {
+            const createdAt = new Date(artifact.created_at);
+            if (createdAt < cutoffDate) {
+              console.log(`Deleting artifact: ${artifact.name} (${artifact.created_at})`);
+              await github.rest.actions.deleteArtifact({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                artifact_id: artifact.id
+              });
+            }
+          }
+
+  # Summary Report
+  maintenance-summary:
+    name: Maintenance Summary
+    runs-on: ubuntu-latest
+    needs: [dependency-update, security-scan, quality-metrics, performance-monitor]
+    if: always()
+    
+    steps:
+    - name: Create maintenance summary
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const results = {
+            'Dependency Update': '${{ needs.dependency-update.result }}',
+            'Security Scan': '${{ needs.security-scan.result }}',
+            'Quality Metrics': '${{ needs.quality-metrics.result }}',
+            'Performance Monitor': '${{ needs.performance-monitor.result }}'
+          };
+          
+          let summary = '## 🔧 Maintenance Workflow Summary\n\n';
+          
+          for (const [job, result] of Object.entries(results)) {
+            const emoji = result === 'success' ? '✅' : result === 'failure' ? '❌' : result === 'skipped' ? '⏭️' : '⚠️';
+            summary += `- ${emoji} **${job}**: ${result}\n`;
+          }
+          
+          summary += `\n---\n*Maintenance run completed at ${new Date().toISOString()}*`;
+          
+          // Create or update maintenance issue
+          const issues = await github.rest.issues.listForRepo({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            labels: 'maintenance-report',
+            state: 'open'
+          });
+          
+          if (issues.data.length > 0) {
+            // Update existing issue
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issues.data[0].number,
+              body: summary
+            });
+          } else {
+            // Create new issue
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🔧 Weekly Maintenance Report',
+              body: summary,
+              labels: ['maintenance-report', 'automated']
+            });
+          }

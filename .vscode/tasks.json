@@ -1,0 +1,566 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    // Environment Setup
+    {
+      "label": "Setup Development Environment",
+      "type": "shell",
+      "command": "python",
+      "args": ["-m", "pip", "install", "-r", "requirements-dev.txt"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "detail": "Install all development dependencies"
+    },
+
+    {
+      "label": "Install Pre-commit Hooks",
+      "type": "shell",
+      "command": "pre-commit",
+      "args": ["install"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "detail": "Install pre-commit hooks for code quality"
+    },
+
+    // Code Quality
+    {
+      "label": "Format Code (Black)",
+      "type": "shell",
+      "command": "black",
+      "args": ["src/", "tests/"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "silent",
+        "focus": false,
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "detail": "Format code with Black"
+    },
+
+    {
+      "label": "Sort Imports (isort)",
+      "type": "shell",
+      "command": "isort",
+      "args": ["src/", "tests/"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "silent",
+        "focus": false,
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "detail": "Sort imports with isort"
+    },
+
+    {
+      "label": "Lint Code (Flake8)",
+      "type": "shell",
+      "command": "flake8",
+      "args": ["src/", "tests/"],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "detail": "Lint code with Flake8",
+      "problemMatcher": "$flake8"
+    },
+
+    {
+      "label": "Type Check (MyPy)",
+      "type": "shell",
+      "command": "mypy",
+      "args": ["src/"],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "detail": "Type check with MyPy",
+      "problemMatcher": "$mypy"
+    },
+
+    {
+      "label": "Security Check (Bandit)",
+      "type": "shell",
+      "command": "bandit",
+      "args": ["-r", "src/"],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "detail": "Security check with Bandit"
+    },
+
+    {
+      "label": "Run All Quality Checks",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Format Code (Black)",
+        "Sort Imports (isort)",
+        "Lint Code (Flake8)",
+        "Type Check (MyPy)",
+        "Security Check (Bandit)"
+      ],
+      "group": "test",
+      "detail": "Run all code quality checks in sequence"
+    },
+
+    // Testing
+    {
+      "label": "Run Unit Tests",
+      "type": "shell",
+      "command": "pytest",
+      "args": ["tests/unit/", "-v"],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}/src",
+          "SDL_VIDEODRIVER": "dummy"
+        }
+      },
+      "detail": "Run unit tests with pytest"
+    },
+
+    {
+      "label": "Run Integration Tests",
+      "type": "shell",
+      "command": "pytest",
+      "args": ["tests/integration/", "-v"],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}/src",
+          "SDL_VIDEODRIVER": "dummy"
+        }
+      },
+      "detail": "Run integration tests with pytest"
+    },
+
+    {
+      "label": "Run Performance Tests",
+      "type": "shell",
+      "command": "pytest",
+      "args": ["tests/performance/", "-v", "--benchmark-only"],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}/src",
+          "SDL_VIDEODRIVER": "dummy"
+        }
+      },
+      "detail": "Run performance benchmarks"
+    },
+
+    {
+      "label": "Run All Tests",
+      "type": "shell",
+      "command": "pytest",
+      "args": ["tests/", "-v", "--cov=src/rcsim", "--cov-report=html"],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}/src",
+          "SDL_VIDEODRIVER": "dummy"
+        }
+      },
+      "detail": "Run all tests with coverage report"
+    },
+
+    {
+      "label": "Run Tests (Current File)",
+      "type": "shell",
+      "command": "pytest",
+      "args": ["${file}", "-v", "-s"],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}/src",
+          "SDL_VIDEODRIVER": "dummy"
+        }
+      },
+      "detail": "Run tests for current file"
+    },
+
+    // Building and Running
+    {
+      "label": "Run Application",
+      "type": "shell",
+      "command": "python",
+      "args": ["src/rcsim/main.py"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "new"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}/src"
+        }
+      },
+      "detail": "Run the main application"
+    },
+
+    {
+      "label": "Run Application (Headless)",
+      "type": "shell",
+      "command": "python",
+      "args": ["src/rcsim/main.py", "--headless"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}/src",
+          "SDL_VIDEODRIVER": "dummy"
+        }
+      },
+      "detail": "Run application in headless mode"
+    },
+
+    {
+      "label": "Build Package",
+      "type": "shell",
+      "command": "python",
+      "args": ["-m", "build"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "detail": "Build Python package"
+    },
+
+    {
+      "label": "Install Package (Editable)",
+      "type": "shell",
+      "command": "pip",
+      "args": ["install", "-e", "."],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "detail": "Install package in editable mode"
+    },
+
+    // Documentation
+    {
+      "label": "Build Documentation",
+      "type": "shell",
+      "command": "make",
+      "args": ["html"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}/docs"
+      },
+      "detail": "Build HTML documentation with Sphinx"
+    },
+
+    {
+      "label": "Serve Documentation",
+      "type": "shell",
+      "command": "python",
+      "args": ["-m", "http.server", "8080"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}/docs/_build/html"
+      },
+      "detail": "Serve documentation locally on port 8080"
+    },
+
+    // Profiling and Performance
+    {
+      "label": "Profile Application",
+      "type": "shell",
+      "command": "python",
+      "args": ["-m", "cProfile", "-o", "profile.prof", "src/rcsim/main.py", "--headless", "--benchmark"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}/src",
+          "SDL_VIDEODRIVER": "dummy"
+        }
+      },
+      "detail": "Profile application performance"
+    },
+
+    {
+      "label": "Memory Profile",
+      "type": "shell",
+      "command": "python",
+      "args": ["-m", "memory_profiler", "src/rcsim/main.py"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}/src",
+          "SDL_VIDEODRIVER": "dummy"
+        }
+      },
+      "detail": "Profile memory usage"
+    },
+
+    // Git and Version Control
+    {
+      "label": "Git Status",
+      "type": "shell",
+      "command": "git",
+      "args": ["status"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "detail": "Show git status"
+    },
+
+    {
+      "label": "Git Add All",
+      "type": "shell",
+      "command": "git",
+      "args": ["add", "."],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "silent",
+        "focus": false,
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "detail": "Stage all changes"
+    },
+
+    // Cleanup
+    {
+      "label": "Clean Cache",
+      "type": "shell",
+      "command": "find",
+      "args": [".", "-type", "d", "-name", "__pycache__", "-exec", "rm", "-rf", "{}", "+"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "silent",
+        "focus": false,
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "detail": "Clean Python cache files",
+      "windows": {
+        "command": "powershell",
+        "args": ["-Command", "Get-ChildItem -Path . -Recurse -Name '__pycache__' | Remove-Item -Recurse -Force"]
+      }
+    },
+
+    {
+      "label": "Clean Build Artifacts",
+      "type": "shell",
+      "command": "rm",
+      "args": ["-rf", "build/", "dist/", "*.egg-info/", ".coverage", "htmlcov/"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "silent",
+        "focus": false,
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "detail": "Clean build artifacts",
+      "windows": {
+        "command": "powershell",
+        "args": ["-Command", "Remove-Item -Path build, dist, *.egg-info, .coverage, htmlcov -Recurse -Force -ErrorAction SilentlyContinue"]
+      }
+    },
+
+    // Development Workflow
+    {
+      "label": "Full Development Check",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Format Code (Black)",
+        "Sort Imports (isort)",
+        "Lint Code (Flake8)",
+        "Type Check (MyPy)",
+        "Run All Tests"
+      ],
+      "group": "test",
+      "detail": "Run complete development workflow"
+    },
+
+    {
+      "label": "Pre-commit Check",
+      "type": "shell",
+      "command": "pre-commit",
+      "args": ["run", "--all-files"],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "detail": "Run pre-commit hooks on all files"
+    }
+  ],
+
+  // Problem matchers
+  "problemMatchers": [
+    {
+      "name": "mypy",
+      "owner": "mypy",
+      "fileLocation": "absolute",
+      "pattern": {
+        "regexp": "^(.+?):(\\d+):(\\d+):\\s+(error|warning|note):\\s+(.+)$",
+        "file": 1,
+        "line": 2,
+        "column": 3,
+        "severity": 4,
+        "message": 5
+      }
+    },
+    {
+      "name": "flake8",
+      "owner": "flake8",
+      "fileLocation": "absolute",
+      "pattern": {
+        "regexp": "^(.+?):(\\d+):(\\d+):\\s+([A-Z]\\d+)\\s+(.+)$",
+        "file": 1,
+        "line": 2,
+        "column": 3,
+        "code": 4,
+        "message": 5
+      }
+    }
+  ]
+}

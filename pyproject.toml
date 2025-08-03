@@ -1,0 +1,251 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rcsim"
+version = "0.1.0"
+description = "Advanced Rubik's Cube Simulator with realistic 3D graphics and authentic solving algorithms"
+readme = "README.md"
+license = {file = "LICENSE"}
+authors = [
+    {name = "Rubik's Cube Simulator Team", email = "dev@rcsim.org"}
+]
+maintainers = [
+    {name = "Rubik's Cube Simulator Team", email = "dev@rcsim.org"}
+]
+keywords = ["rubiks-cube", "speedcubing", "3d-graphics", "algorithms", "puzzle", "education"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Education",
+    "Intended Audience :: End Users/Desktop",
+    "Topic :: Games/Entertainment :: Puzzle Games",
+    "Topic :: Education",
+    "Topic :: Multimedia :: Graphics :: 3D Rendering",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.9"
+dependencies = [
+    # Core dependencies
+    "numpy>=1.21.0",
+    "pygame>=2.1.0",
+    "PyOpenGL>=3.1.0",
+    "moderngl>=5.6.0",
+    "pillow>=9.0.0",
+    
+    # Math and algorithms
+    "scipy>=1.8.0",
+    "numba>=0.56.0",
+    
+    # Configuration and data
+    "pydantic>=1.10.0",
+    "pyyaml>=6.0",
+    "toml>=0.10.0",
+    
+    # Utilities
+    "click>=8.0.0",
+    "rich>=12.0.0",
+    "loguru>=0.6.0",
+]
+
+[project.optional-dependencies]
+# Development dependencies
+dev = [
+    "pytest>=7.2.0",
+    "pytest-cov>=4.0.0",
+    "pytest-xvfb>=2.0.0",  # For headless testing
+    "pytest-benchmark>=4.0.0",
+    "pytest-mock>=3.10.0",
+    "hypothesis>=6.60.0",  # Property-based testing
+    
+    # Code quality
+    "black>=22.0.0",
+    "isort>=5.11.0",
+    "flake8>=6.0.0",
+    "flake8-docstrings>=1.6.0",
+    "flake8-type-checking>=2.3.0",
+    "mypy>=1.0.0",
+    "bandit>=1.7.0",  # Security linting
+    
+    # Pre-commit hooks
+    "pre-commit>=2.20.0",
+    
+    # Documentation
+    "sphinx>=5.0.0",
+    "sphinx-rtd-theme>=1.2.0",
+    "sphinx-autodoc-typehints>=1.19.0",
+    "myst-parser>=0.18.0",
+    
+    # Profiling and debugging
+    "py-spy>=0.3.0",
+    "memory-profiler>=0.60.0",
+    "line-profiler>=4.0.0",
+]
+
+# Performance dependencies
+perf = [
+    "cython>=0.29.0",
+    "numba>=0.56.0",
+    "psutil>=5.9.0",
+]
+
+# Alternative graphics backends
+graphics-alt = [
+    "pygame-ce>=2.1.0",  # Community edition
+    "glfw>=2.5.0",
+    "PyQt6>=6.4.0",
+    "PySide6>=6.4.0",
+]
+
+# Complete development setup
+all = [
+    "rcsim[dev,perf,graphics-alt]"
+]
+
+[project.urls]
+Homepage = "https://github.com/your-username/rcsim"
+Documentation = "https://rcsim.readthedocs.io"
+Repository = "https://github.com/your-username/rcsim.git"
+"Bug Reports" = "https://github.com/your-username/rcsim/issues"
+Changelog = "https://github.com/your-username/rcsim/blob/main/CHANGELOG.md"
+
+[project.scripts]
+rcsim = "rcsim.main:main"
+rcsim-benchmark = "rcsim.tools.benchmark:main"
+rcsim-profile = "rcsim.tools.profiler:main"
+
+[project.gui-scripts]
+rcsim-gui = "rcsim.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+rcsim = [
+    "assets/**/*",
+    "shaders/**/*",
+    "algorithms/**/*.json",
+    "py.typed"
+]
+
+# Black configuration
+[tool.black]
+line-length = 88
+target-version = ['py39', 'py310', 'py311', 'py312']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+  | docs
+)/
+'''
+
+# isort configuration
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["rcsim"]
+known_third_party = ["numpy", "pygame", "moderngl", "PIL"]
+sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
+
+# MyPy configuration
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = [
+    "pygame.*",
+    "moderngl.*",
+    "OpenGL.*",
+    "numba.*",
+]
+ignore_missing_imports = true
+
+# Pytest configuration
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--cov=src/rcsim",
+    "--cov-report=term-missing",
+    "--cov-report=html:htmlcov",
+    "--cov-report=xml",
+    "--cov-fail-under=80",
+    "--import-mode=importlib",
+]
+testpaths = ["tests"]
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+    "performance: marks tests as performance tests",
+    "gpu: marks tests that require GPU",
+    "headless: marks tests that can run headless",
+]
+
+# Coverage configuration
+[tool.coverage.run]
+source = ["src"]
+branch = true
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "setup.py",
+    "src/rcsim/__main__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+# Bandit security linting
+[tool.bandit]
+exclude_dirs = ["tests", "test_*"]
+skips = ["B101", "B601"]  # Skip assert and shell usage in tests

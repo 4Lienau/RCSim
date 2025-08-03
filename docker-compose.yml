@@ -1,0 +1,233 @@
+# Advanced Rubik's Cube Simulator - Docker Compose Configuration
+version: '3.8'
+
+services:
+  # Development environment
+  rcsim-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      args:
+        USER_ID: ${USER_ID:-1000}
+        GROUP_ID: ${GROUP_ID:-1000}
+        USERNAME: ${USERNAME:-developer}
+    container_name: rcsim-development
+    hostname: rcsim-dev
+    volumes:
+      # Mount source code for live development
+      - .:/workspace
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      # Persistent volumes for development data
+      - rcsim-dev-cache:/home/${USERNAME:-developer}/.cache
+      - rcsim-dev-local:/home/${USERNAME:-developer}/.local
+      - rcsim-dev-vscode:/home/${USERNAME:-developer}/.vscode-server
+    environment:
+      - DISPLAY=${DISPLAY:-:0}
+      - RCSIM_ENV=development
+      - RCSIM_DEBUG=1
+      - RCSIM_LOG_LEVEL=DEBUG
+      - PYTHONPATH=/workspace/src
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - SDL_VIDEODRIVER=x11
+    ports:
+      - "8080:8080"   # Web interface
+      - "8888:8888"   # Jupyter Lab
+      - "8000:8000"   # Documentation server
+      - "5000:5000"   # Development server
+    networks:
+      - rcsim-network
+    stdin_open: true
+    tty: true
+    privileged: false
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import rcsim; print('OK')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Production environment
+  rcsim-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_DATE: ${BUILD_DATE:-}
+        VCS_REF: ${VCS_REF:-}
+        VERSION: ${VERSION:-latest}
+    container_name: rcsim-production
+    hostname: rcsim-prod
+    volumes:
+      - rcsim-data:/app/data
+      - rcsim-logs:/app/logs
+      - rcsim-config:/app/config
+    environment:
+      - RCSIM_ENV=production
+      - RCSIM_LOG_LEVEL=INFO
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+    ports:
+      - "80:8080"
+    networks:
+      - rcsim-network
+    restart: unless-stopped
+    profiles:
+      - production
+    healthcheck:
+      test: ["CMD", "python", "-c", "import rcsim; print('OK')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Testing environment (for CI/CD)
+  rcsim-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      target: test
+    container_name: rcsim-testing
+    hostname: rcsim-test
+    volumes:
+      - .:/workspace
+      - rcsim-test-cache:/home/developer/.cache
+    environment:
+      - RCSIM_ENV=testing
+      - RCSIM_TESTING=1
+      - PYTHONPATH=/workspace/src
+      - SDL_VIDEODRIVER=dummy
+      - DISPLAY=:99
+    command: >
+      bash -c "
+        echo '🧪 Running test suite...' &&
+        pytest tests/ -v --cov=src/rcsim --cov-report=xml --cov-report=html &&
+        echo '✅ Tests completed!'
+      "
+    networks:
+      - rcsim-network
+    profiles:
+      - testing
+
+  # Documentation server
+  rcsim-docs:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: rcsim-docs
+    hostname: rcsim-docs
+    volumes:
+      - .:/workspace
+      - rcsim-docs-build:/workspace/docs/_build
+    environment:
+      - PYTHONPATH=/workspace/src
+    command: >
+      bash -c "
+        echo '📚 Building documentation...' &&
+        cd docs &&
+        make html &&
+        echo '🌐 Serving documentation on http://localhost:8000' &&
+        python -m http.server 8000 --directory _build/html
+      "
+    ports:
+      - "8000:8000"
+    networks:
+      - rcsim-network
+    profiles:
+      - docs
+
+  # Jupyter Lab service
+  jupyter:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: rcsim-jupyter
+    hostname: rcsim-jupyter
+    volumes:
+      - .:/workspace
+      - rcsim-jupyter-data:/home/developer/.jupyter
+    environment:
+      - PYTHONPATH=/workspace/src
+      - JUPYTER_ENABLE_LAB=yes
+    command: >
+      bash -c "
+        echo '🪐 Starting Jupyter Lab...' &&
+        jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root
+          --ServerApp.token='' --ServerApp.password=''
+          --ServerApp.allow_origin='*' --ServerApp.base_url=/jupyter
+      "
+    ports:
+      - "8888:8888"
+    networks:
+      - rcsim-network
+    profiles:
+      - jupyter
+
+  # Performance monitoring
+  rcsim-monitor:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: rcsim-monitor
+    hostname: rcsim-monitor
+    volumes:
+      - .:/workspace
+      - rcsim-monitor-data:/workspace/monitoring
+    environment:
+      - PYTHONPATH=/workspace/src
+      - SDL_VIDEODRIVER=dummy
+    command: >
+      bash -c "
+        echo '📊 Starting performance monitoring...' &&
+        mkdir -p /workspace/monitoring &&
+        while true; do
+          echo '⏱️  Running performance benchmarks...' &&
+          pytest tests/performance/ --benchmark-only --benchmark-json=/workspace/monitoring/benchmark-\$(date +%Y%m%d-%H%M%S).json &&
+          echo '💤 Waiting 1 hour before next benchmark...' &&
+          sleep 3600
+        done
+      "
+    networks:
+      - rcsim-network
+    profiles:
+      - monitoring
+
+# Named volumes for data persistence
+volumes:
+  # Development volumes
+  rcsim-dev-cache:
+    driver: local
+  rcsim-dev-local:
+    driver: local
+  rcsim-dev-vscode:
+    driver: local
+
+  # Production volumes
+  rcsim-data:
+    driver: local
+  rcsim-logs:
+    driver: local
+  rcsim-config:
+    driver: local
+
+  # Service-specific volumes
+  rcsim-test-cache:
+    driver: local
+  rcsim-docs-build:
+    driver: local
+  rcsim-jupyter-data:
+    driver: local
+  rcsim-monitor-data:
+    driver: local
+
+# Networks
+networks:
+  rcsim-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16

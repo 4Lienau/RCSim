@@ -1,0 +1,88 @@
+{
+  "folders": [
+    {
+      "name": "Advanced Rubik's Cube Simulator",
+      "path": "."
+    }
+  ],
+  "settings": {
+    // Inherit from .vscode/settings.json
+    "python.defaultInterpreterPath": "./venv/bin/python",
+    "python.analysis.extraPaths": ["./src"],
+    
+    // Workspace-specific overrides
+    "files.watcherExclude": {
+      "**/venv/**": true,
+      "**/.venv/**": true,
+      "**/htmlcov/**": true,
+      "**/node_modules/**": true,
+      "**/.git/objects/**": true,
+      "**/.git/subtree-cache/**": true,
+      "**/build/**": true,
+      "**/dist/**": true
+    },
+
+    // Multi-root workspace settings
+    "search.followSymlinks": false,
+    "search.useGlobalIgnoreFiles": true,
+    
+    // Code navigation
+    "breadcrumbs.filePath": "on",
+    "outline.showVariables": false,
+    
+    // Performance for large codebase
+    "typescript.disableAutomaticTypeAcquisition": true,
+    "extensions.autoUpdate": false
+  },
+  "extensions": {
+    "recommendations": [
+      "ms-python.python",
+      "ms-python.vscode-pylance",
+      "ms-python.black-formatter",
+      "github.copilot",
+      "ms-toolsai.jupyter"
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Workspace: Setup All",
+        "type": "shell",
+        "command": "echo",
+        "args": ["Setting up workspace..."],
+        "group": "build",
+        "dependsOrder": "sequence",
+        "dependsOn": [
+          "Setup Development Environment",
+          "Install Pre-commit Hooks",
+          "Install Package (Editable)"
+        ],
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared"
+        },
+        "detail": "Complete workspace setup"
+      }
+    ]
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Workspace: Debug Current File",
+        "type": "python",
+        "request": "launch",
+        "program": "${file}",
+        "console": "integratedTerminal",
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}/src"
+        },
+        "justMyCode": false
+      }
+    ]
+  }
+}

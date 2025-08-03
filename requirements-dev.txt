@@ -1,0 +1,46 @@
+# Development dependencies for Advanced Rubik's Cube Simulator
+# Install with: pip install -r requirements-dev.txt
+
+# Include core requirements
+-r requirements.txt
+
+# Testing framework
+pytest>=7.2.0,<8.0.0
+pytest-cov>=4.0.0,<5.0.0
+pytest-xvfb>=2.0.0,<3.0.0  # For headless testing on Linux
+pytest-benchmark>=4.0.0,<5.0.0
+pytest-mock>=3.10.0,<4.0.0
+hypothesis>=6.60.0,<7.0.0  # Property-based testing
+
+# Code formatting and quality
+black>=22.0.0,<24.0.0
+isort>=5.11.0,<6.0.0
+flake8>=6.0.0,<7.0.0
+flake8-docstrings>=1.6.0,<2.0.0
+flake8-type-checking>=2.3.0,<3.0.0
+mypy>=1.0.0,<2.0.0
+bandit>=1.7.0,<2.0.0  # Security linting
+
+# Pre-commit hooks
+pre-commit>=2.20.0,<4.0.0
+
+# Documentation
+sphinx>=5.0.0,<8.0.0
+sphinx-rtd-theme>=1.2.0,<3.0.0
+sphinx-autodoc-typehints>=1.19.0,<2.0.0
+myst-parser>=0.18.0,<3.0.0
+
+# Performance profiling and debugging
+py-spy>=0.3.0,<1.0.0
+memory-profiler>=0.60.0,<1.0.0
+line-profiler>=4.0.0,<5.0.0
+psutil>=5.9.0,<6.0.0
+
+# Build tools
+build>=0.10.0,<2.0.0
+twine>=4.0.0,<5.0.0
+
+# Development utilities
+ipython>=8.0.0,<9.0.0  # Better REPL
+jupyter>=1.0.0,<2.0.0  # Notebooks for analysis
+matplotlib>=3.5.0,<4.0.0  # Data visualization for analysis
