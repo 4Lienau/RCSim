@@ -57,10 +57,10 @@ def sample_moves():
     """Provide sample moves for testing."""
     from rcsim.cube.moves import Move
     return [
-        Move.from_notation("R"),
-        Move.from_notation("U"),
-        Move.from_notation("R'"),
-        Move.from_notation("U'"),
+        Move.parse("R"),
+        Move.parse("U"),
+        Move.parse("R'"),
+        Move.parse("U'"),
     ]
 
 
@@ -69,7 +69,7 @@ def sample_scramble():
     """Provide a sample scramble sequence."""
     from rcsim.cube.moves import Move
     scramble_notation = "R U R' U R U2 R' F R U R' U' F' R U R' U R U2 R'"
-    return [Move.from_notation(move) for move in scramble_notation.split()]
+    return [Move.parse(move) for move in scramble_notation.split()]
 
 
 @pytest.fixture
@@ -204,17 +204,17 @@ def mock_opengl():
 def move_strategy():
     """Hypothesis strategy for generating random moves."""
     from hypothesis import strategies as st
-    from rcsim.cube.moves import Move
+    from rcsim.cube.moves import Move, MoveType
     
     face_strategy = st.sampled_from(['R', 'L', 'U', 'D', 'F', 'B'])
-    direction_strategy = st.sampled_from([1, -1, 2])
-    wide_strategy = st.booleans()
+    amount_strategy = st.sampled_from([1, 2, 3])
     
     return st.builds(
         Move,
         face=face_strategy,
-        direction=direction_strategy,
-        wide=wide_strategy
+        amount=amount_strategy,
+        move_type=st.just(MoveType.FACE),
+        layers=st.just(1)
     )
 
 

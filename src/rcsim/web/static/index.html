@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Rubik's Cube Simulator</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="icon" type="image/x-icon" href="/static/assets/favicon.ico">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="app-header">
+            <h1>🎲 Advanced Rubik's Cube Simulator</h1>
+            <div class="header-controls">
+                <div class="cube-info">
+                    <span id="cube-status">Solved</span>
+                    <span id="move-counter">0 moves</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main content area -->
+        <div class="main-content">
+            <!-- 3D Cube viewport -->
+            <div class="cube-viewport">
+                <canvas id="cube-canvas"></canvas>
+                <div class="viewport-overlay">
+                    <div class="fps-counter" id="fps-counter">60 FPS</div>
+                    <div class="loading-spinner" id="loading-spinner">
+                        <div class="spinner"></div>
+                        <p>Loading 3D Cube...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Control panel -->
+            <div class="control-panel">
+                <!-- Cube Controls -->
+                <div class="control-section">
+                    <h3>🎮 Cube Controls</h3>
+                    <div class="button-grid">
+                        <button class="control-btn" data-move="U" title="Up face clockwise">U</button>
+                        <button class="control-btn" data-move="D" title="Down face clockwise">D</button>
+                        <button class="control-btn" data-move="L" title="Left face clockwise">L</button>
+                        <button class="control-btn" data-move="R" title="Right face clockwise">R</button>
+                        <button class="control-btn" data-move="F" title="Front face clockwise">F</button>
+                        <button class="control-btn" data-move="B" title="Back face clockwise">B</button>
+                    </div>
+                    <div class="button-grid">
+                        <button class="control-btn prime" data-move="U'" title="Up face counter-clockwise">U'</button>
+                        <button class="control-btn prime" data-move="D'" title="Down face counter-clockwise">D'</button>
+                        <button class="control-btn prime" data-move="L'" title="Left face counter-clockwise">L'</button>
+                        <button class="control-btn prime" data-move="R'" title="Right face counter-clockwise">R'</button>
+                        <button class="control-btn prime" data-move="F'" title="Front face counter-clockwise">F'</button>
+                        <button class="control-btn prime" data-move="B'" title="Back face counter-clockwise">B'</button>
+                    </div>
+                    <div class="button-row">
+                        <button id="scramble-btn" class="action-btn primary">🎲 Scramble</button>
+                        <button id="reset-btn" class="action-btn secondary">🔄 Reset</button>
+                        <button id="undo-btn" class="action-btn secondary">↶ Undo</button>
+                    </div>
+                </div>
+
+                <!-- Solver Controls -->
+                <div class="control-section">
+                    <h3>🧠 Solver</h3>
+                    <div class="solver-controls">
+                        <select id="solver-method" class="select-input">
+                            <option value="layer_by_layer">Layer-by-Layer (Beginner)</option>
+                            <option value="cfop">CFOP (Advanced)</option>
+                        </select>
+                        <button id="solve-btn" class="action-btn primary">🚀 Solve</button>
+                    </div>
+                    <div class="solution-info" id="solution-info" style="display: none;">
+                        <div class="solution-stats">
+                            <span id="solution-moves">0 moves</span>
+                            <span id="solution-time">0.00s</span>
+                        </div>
+                        <div class="solution-steps" id="solution-steps"></div>
+                        <button id="apply-solution-btn" class="action-btn secondary">▶ Apply Solution</button>
+                    </div>
+                </div>
+
+                <!-- Camera Controls -->
+                <div class="control-section">
+                    <h3>📷 Camera</h3>
+                    <div class="camera-controls">
+                        <button id="reset-camera-btn" class="action-btn secondary">🎯 Reset View</button>
+                        <button id="auto-rotate-btn" class="action-btn secondary">🔄 Auto Rotate</button>
+                    </div>
+                    <div class="camera-settings">
+                        <label>
+                            Zoom: <input type="range" id="zoom-slider" min="3" max="15" value="8" step="0.5">
+                        </label>
+                        <label>
+                            Animation Speed: <input type="range" id="speed-slider" min="0.5" max="3" value="1" step="0.1">
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Statistics -->
+                <div class="control-section">
+                    <h3>📊 Statistics</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-label">Total Moves:</span>
+                            <span class="stat-value" id="total-moves">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Session Time:</span>
+                            <span class="stat-value" id="session-time">00:00</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Cube State:</span>
+                            <span class="stat-value" id="cube-state">Solved</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer with keyboard shortcuts -->
+        <footer class="app-footer">
+            <div class="shortcuts">
+                <span><strong>Keyboard Shortcuts:</strong></span>
+                <span>Space = Scramble</span>
+                <span>R = Reset</span>
+                <span>S = Solve</span>
+                <span>U/D/L/R/F/B = Face moves</span>
+                <span>Shift + Move = Prime</span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- JavaScript libraries -->
+    <script src="https://unpkg.com/three@0.144.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.144.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <!-- Application JavaScript - Order matters! -->
+    <script src="/static/js/api-client.js"></script>
+    <script src="/static/js/cube-renderer.js"></script>
+    <script src="/static/js/cube-controller.js"></script>
+    <script src="/static/js/solver-ui.js"></script>
+    <script src="/static/js/main.js"></script>
+</body>
+</html>

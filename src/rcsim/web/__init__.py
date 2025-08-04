@@ -1,0 +1,1 @@
+"""Web interface for the Advanced Rubik's Cube Simulator."""

@@ -8,7 +8,22 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git branch:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(python -m pytest tests/unit/test_moves.py::TestMove::test_move_creation -v)",
+      "Bash(python3 -m pytest tests/unit/test_moves.py::TestMove::test_move_creation -v)",
+      "Bash(python3:*)",
+      "Bash(python -m pytest tests/ -v)",
+      "Bash(grep:*)",
+      "Bash(mkdir:*)",
+      "Bash(pip install:*)",
+      "Bash(export DISPLAY=:0)",
+      "Bash(sudo apt-get:*)",
+      "Bash(sudo apt-get install:*)",
+      "Bash(python:*)",
+      "Bash(PYTHONPATH=/mnt/v/GIT/rcsim/src python3 -c \"\nimport sys; sys.path.insert(0, ''/mnt/v/GIT/rcsim/src'')\nfrom rcsim.web.server import run_server\nrun_server()\n\")",
+      "Bash(ss:*)",
+      "Bash(curl:*)",
+      "Bash(ls -la)"
     ],
     "deny": []
   }
